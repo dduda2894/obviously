@@ -1,6 +1,6 @@
 ## ASOS scraper
 
-### How to start
+### How to run
 
 Run main method in src/main/java/org/example/scrapers/asos/AsosScraper.java
 
@@ -14,7 +14,7 @@ The scraper gets the URL of the API and then makes only API calls to get the det
 
 Note:
 For the purpose of this test, the scraper only picks one sub category from each available category.
-Some subcategory have different layout. Only the layout where product are displayed on first page was addressed in the
+Some subcategory have different layout. Only the layout where products are displayed in first page was addressed in the
 scraper.
 
 ### ASOS product search API
