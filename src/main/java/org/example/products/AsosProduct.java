@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 
 import java.util.Objects;
 
-public class AsosProduct {
+public class AsosProduct extends Product {
 
     private String SKU;
     private String price;
