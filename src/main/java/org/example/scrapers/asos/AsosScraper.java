@@ -27,9 +27,9 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 
-public class AssosScraper {
+public class AsosScraper {
 
-    private static final Logger logger = LogManager.getLogger(AssosScraper.class);
+    private static final Logger logger = LogManager.getLogger(AsosScraper.class);
 
     private boolean isCookiesAccepted = false;
 
@@ -272,7 +272,7 @@ public class AssosScraper {
     }
 
     public static void main(String[] args) {
-        new AssosScraper().scrape();
+        new AsosScraper().scrape();
     }
 }
 
