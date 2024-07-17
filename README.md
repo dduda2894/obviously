@@ -1,5 +1,8 @@
 ## ASOS scraper
 
+### How to start
+
+Run main method in src/main/java/org/example/scrapers/asos/AsosScraper.java
 
 ### How it works
 
@@ -20,3 +23,13 @@ The maximum number of products that can be downloaded per one request is 200.
 It is unclear why sometimes the API return a higher or lower number of products than the website.
 Further investigation into this is necessary.
 
+### WebDriverException
+
+A WebDriverException exception is thrown mid run. The scraper continues to run. Needs to be investigated, but does not appear to affect the result.
+
+### products.csv file
+
+After a successful completion of scraping the products are stored in a products.csv file.
+
+The category field contains a primary and a sub categories separated by a symbol '/'. 
+When the anchor text of the category in the website is "View All", the primary category and sub category in the file match.
