@@ -11,7 +11,7 @@ The scraper gets the URL of the API and then makes only API calls to get the det
 
 Note:
 For the purpose of this test, the scraper only picks one sub category from each available category. 
-Some subcategory have different layout. Only the most prominent layout was addressed in the craper.
+Some subcategory have different layout. Only the layout where product are displayed on first page was addressed in the scraper.
 
 ###  ASOS product search API
 
