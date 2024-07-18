@@ -4,24 +4,25 @@ import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
-
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "productType", discriminatorType = DiscriminatorType.STRING)
 @Table(name = "products") // Use the same table for both entities
 public class Product {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
     private String SKU;
     private String price;
     private String category;
     private String productTitle;
 
-    public Product(String SKU, String price, String category, String productTitle) {
-        this.SKU = SKU;
-        this.price = price;
-        this.category = category;
-        this.productTitle = productTitle;
+
+    public int getId() {
+        return id;
     }
 
-    public Product() {
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getSKU() {
@@ -57,21 +58,26 @@ public class Product {
     }
 
     @Override
+    public String toString() {
+        return "Product{" +
+                "id=" + id +
+                ", SKU='" + SKU + '\'' +
+                ", price='" + price + '\'' +
+                ", category='" + category + '\'' +
+                ", productTitle='" + productTitle + '\'' +
+                '}';
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Product product = (Product) o;
-        return Objects.equals(SKU, product.SKU) && Objects.equals(price, product.price) && Objects.equals(category, product.category) && Objects.equals(productTitle, product.productTitle);
+        return id == product.id && Objects.equals(SKU, product.SKU) && Objects.equals(price, product.price) && Objects.equals(category, product.category) && Objects.equals(productTitle, product.productTitle);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(SKU, price, category, productTitle);
+        return Objects.hash(id, SKU, price, category, productTitle);
     }
-
-    @Override
-    public String toString() {
-        return "Product{" + "SKU='" + SKU + '\'' + ", price='" + price + '\'' + ", category='" + category + '\'' + ", productTitle='" + productTitle + '\'' + '}';
-    }
-
 }

@@ -7,8 +7,8 @@ import org.example.products.AsosProduct;
 import org.example.ChromeLauncher;
 import org.example.pojo.InterceptedHttpRequest;
 
+import org.example.products.Product;
 import org.example.scrapers.Scraper;
-import org.example.scrapers.SimilarWebsiteScraperType1;
 import org.example.utils.*;
 import org.jsoup.Connection;
 import org.openqa.selenium.By;
@@ -21,8 +21,6 @@ import org.openqa.selenium.remote.http.Filter;
 import org.openqa.selenium.remote.http.HttpHandler;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -32,18 +30,21 @@ public class AsosScraper extends Scraper {
 
     public static String scraperName = "asosScraper";
 
+    public AsosScraper(Class clazz) {
+        super(clazz);
+    }
+
     public AsosScraper() {
         super(AsosScraper.class);
     }
 
-    public String asosHomePageUrl = "https://www.asos.com/men/";
-    private final Logger logger = LogManager.getLogger(AsosScraper.class);
+    public String url = "https://www.asos.com/men/";
 
     private boolean isCookiesAccepted = false;
 
-    private Map<String, Map<String, String>> extractCategoriesAndRespectiveUrls(WebDriver driver) {
+    protected Map<String, Map<String, String>> extractCategoriesAndRespectiveUrls(WebDriver driver) {
         Map<String, Map<String, String>> categoriesAndUrls = new HashMap<>();
-        driver.get(asosHomePageUrl);
+        driver.get(url);
 //          Find primary and secondary category list
         WebElement menu = driver.findElement(By.className("tx7VWbM"));
         List<WebElement> categories = menu.findElements(By.tagName("button"));
@@ -83,7 +84,7 @@ public class AsosScraper extends Scraper {
     }
 
 
-    private void acceptCookies(WebDriver driver) {
+    protected void acceptCookies(WebDriver driver) {
         if (!isCookiesAccepted) {
             try {
                 WebElement acceptCookiesButton = driver.findElement(By.id("onetrust-accept-btn-handler"));
@@ -95,7 +96,7 @@ public class AsosScraper extends Scraper {
         }
     }
 
-    private void loadMoreProducts(WebDriver driver) {
+    protected void loadMoreProducts(WebDriver driver) {
         WebElement loadMoreButton = driver.findElement(By.className("loadButton_wWQ3F"));
         Wait<WebDriver> wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         wait.until(d -> loadMoreButton.isDisplayed());
@@ -105,7 +106,7 @@ public class AsosScraper extends Scraper {
         actions.moveToElement(loadMoreButton).click().perform();
     }
 
-    private HttpHandler getHttpHandlerWithUrlFilter(HttpHandler next, String urlPart, InterceptedHttpRequest interceptedHttpRequest) {
+    protected HttpHandler getHttpHandlerWithUrlFilter(HttpHandler next, String urlPart, InterceptedHttpRequest interceptedHttpRequest) {
         return (HttpHandler) req -> {
             if (req.getUri().contains(urlPart)) {
                 logger.debug("API request URL {}", req.getUri());
@@ -123,7 +124,7 @@ public class AsosScraper extends Scraper {
         };
     }
 
-    private InterceptedHttpRequest acquireSearchApiRequestDetails(WebDriver driver, String url) {
+    protected InterceptedHttpRequest acquireSearchApiRequestDetails(WebDriver driver, String url) {
         InterceptedHttpRequest interceptedHttpRequest = new InterceptedHttpRequest();
 //        Intercept product search request
         try (NetworkInterceptor searched = new NetworkInterceptor(driver, (Filter) next -> getHttpHandlerWithUrlFilter(next, "api/product/search/v2/", interceptedHttpRequest))) {
@@ -145,8 +146,8 @@ public class AsosScraper extends Scraper {
         return interceptedHttpRequest;
     }
 
-    private List<AsosProduct> extractProductsJson(JsonObject jsonObject, String primaryCategory) {
-        List<AsosProduct> products = new ArrayList<>();
+    protected List<Product> extractProductsJson(JsonObject jsonObject, String primaryCategory) {
+        List<Product> products = new ArrayList<>();
 //        Get all products from JSON
         JsonArray apiProducts = jsonObject.getAsJsonArray("products");
         String category = jsonObject.get("categoryName").getAsString();
@@ -160,7 +161,7 @@ public class AsosScraper extends Scraper {
         return products;
     }
 
-    private Connection.Response callProductSearchApi(String url, Map<String, String> headers, String offset, String limit) throws IOException {
+    protected Connection.Response callProductSearchApi(String url, Map<String, String> headers, String offset, String limit) throws IOException {
 //       Set offset, the number of the document from which the next documents will be downloaded
         String initialUrl = UrlUtil.replaceQueryParameter(url, "offset", offset);
 //       Set the limit to a number of products that will be downloaded from the API
@@ -186,8 +187,8 @@ public class AsosScraper extends Scraper {
 
     }
 
-    private List<AsosProduct> extractAllProductsFromSearchApi(InterceptedHttpRequest interceptedHttpRequest, String primaryCategory) {
-        List<AsosProduct> allProducts = new ArrayList<>();
+    protected List<Product> extractAllProductsFromSearchApi(InterceptedHttpRequest interceptedHttpRequest, String primaryCategory) {
+        List<Product> allProducts = new ArrayList<>();
         try {
 //          The number of the product from which to get the next products
             int offset = 0;
@@ -207,7 +208,7 @@ public class AsosScraper extends Scraper {
                     itemCount = jsonObject.get("itemCount").getAsInt();
                 }
 //                Extract products from response
-                List<AsosProduct> products = extractProductsJson(jsonObject, primaryCategory);
+                List<Product> products = extractProductsJson(jsonObject, primaryCategory);
 //               When no products are downloaded from API, exit the loop
                 if (products.isEmpty()) {
                     printProductCollectionStatusMessage(itemCount, allProducts.size());
@@ -223,7 +224,8 @@ public class AsosScraper extends Scraper {
         return allProducts;
     }
 
-    private List<AsosProduct> scrapeProducts(WebDriver driver, String url, String primaryCategory) {
+
+    protected List<Product> scrapeProducts(WebDriver driver, String url, String primaryCategory) {
         try {
 //          Get the URL that is used to  call API to search for products
             InterceptedHttpRequest interceptedHttpRequest = acquireSearchApiRequestDetails(driver, url);
@@ -235,20 +237,8 @@ public class AsosScraper extends Scraper {
         }
     }
 
-    private List<AsosProduct> scrapeProductsFromPrimaryCategory(WebDriver driver, Map<String, Map<String, String>> categoriesAndUrls) {
-        List<AsosProduct> allProducts = new ArrayList<>();
-        for (Map.Entry<String, Map<String, String>> primaryCategoryAndUrls : categoriesAndUrls.entrySet()) {
-            String primaryCategory = primaryCategoryAndUrls.getKey();
-            Map<String, String> secondaryCategoryAndUrls = primaryCategoryAndUrls.getValue();
-            List<AsosProduct> products = scrapeProductsFromSecondaryCategory(driver, secondaryCategoryAndUrls, primaryCategory);
-            allProducts.addAll(products);
-            logger.info("");
-        }
-        return allProducts;
-    }
-
-    private List<AsosProduct> scrapeProductsFromSecondaryCategory(WebDriver driver, Map<String, String> secondaryCategoryAndUrls, String primaryCategory) {
-        List<AsosProduct> allProducts = new ArrayList<>();
+    protected List<Product> scrapeProductsFromSecondaryCategory(WebDriver driver, Map<String, String> secondaryCategoryAndUrls, String primaryCategory) {
+        List<Product> allProducts = new ArrayList<>();
 //        Iterate over all secondary category records
         for (Map.Entry<String, String> secondaryCategoryAndUrl : secondaryCategoryAndUrls.entrySet()) {
             String secondaryCategory = secondaryCategoryAndUrl.getKey();
@@ -256,22 +246,35 @@ public class AsosScraper extends Scraper {
             logger.info("Scrape: {}", secondaryCategoryUrl);
             logger.info("Category: {}", secondaryCategory);
 //            Start scraping
-            List<AsosProduct> products = scrapeProducts(driver, secondaryCategoryUrl, primaryCategory);
+            List<Product> products = scrapeProducts(driver, secondaryCategoryUrl, primaryCategory);
             allProducts.addAll(products);
+            break;
         }
         return allProducts;
     }
 
-    public List<AsosProduct> scrape() {
-//        Launch chrome
+    protected List<Product> scrapeProductsFromPrimaryCategory(WebDriver driver, Map<String, Map<String, String>> categoriesAndUrls) {
+        List<Product> allProducts = new ArrayList<>();
+        for (Map.Entry<String, Map<String, String>> primaryCategoryAndUrls : categoriesAndUrls.entrySet()) {
+            String primaryCategory = primaryCategoryAndUrls.getKey();
+            Map<String, String> secondaryCategoryAndUrls = primaryCategoryAndUrls.getValue();
+            List<Product> products = scrapeProductsFromSecondaryCategory(driver, secondaryCategoryAndUrls, primaryCategory);
+            allProducts.addAll(products);
+            logger.info("");
+        }
+        return allProducts;
+    }
+
+
+    @Override
+    public List<Product> scrape() {
         WebDriver driver = new ChromeLauncher().launch();
 //       Set implicit  wait  to 10 seconds. Allows time for elements to become available
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-//        Extract categories and respective urls
         Map<String, Map<String, String>> categoriesAndUrls = extractCategoriesAndRespectiveUrls(driver);
 //        Scrape all products from all categories
         List allProducts = scrapeProductsFromPrimaryCategory(driver, categoriesAndUrls);
-        FileUtil.writeToCsvFile(allProducts);
+
         return allProducts;
     }
 

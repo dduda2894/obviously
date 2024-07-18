@@ -36,10 +36,10 @@ public class H2InMemoryDb implements AutoCloseable {
             List<Product> products = query.getResultList();
 
             for (Product product : products) {
-                logger.info("Product ID: {}", product.getProductTitle());
-                logger.info("Name: {}", product.getSKU());
-                logger.info("Price: {}", product.getPrice());
+                logger.info("SKU: {}", product.getSKU());
+                logger.info("Product Title: {}", product.getProductTitle());
                 logger.info("Category: {}", product.getCategory());
+                logger.info("Price: {}", product.getPrice());
                 logger.info("---------------------");
 //            }
 
