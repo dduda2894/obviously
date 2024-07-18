@@ -5,11 +5,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.example.products.AsosProduct;
 import org.example.ChromeLauncher;
-import org.example.InterceptedHttpRequest;
-import org.example.utils.FileUtil;
-import org.example.utils.JsonUtil;
-import org.example.utils.JsoupUtil;
-import org.example.utils.UrlUtil;
+import org.example.pojo.InterceptedHttpRequest;
+
+import org.example.scrapers.Scraper;
+import org.example.scrapers.SimilarWebsiteScraperType1;
+import org.example.utils.*;
 import org.jsoup.Connection;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
@@ -28,15 +28,22 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 
-public class AsosScraper {
+public class AsosScraper extends Scraper {
 
-    private static final Logger logger = LogManager.getLogger(AsosScraper.class);
+    public static String scraperName = "asosScraper";
+
+    public AsosScraper() {
+        super(AsosScraper.class);
+    }
+
+    public String asosHomePageUrl = "https://www.asos.com/men/";
+    private final Logger logger = LogManager.getLogger(AsosScraper.class);
 
     private boolean isCookiesAccepted = false;
 
-    private Map<String, Map<String, String>> extractCategoriesAndRespectiveUrls(WebDriver driver, String url) {
+    private Map<String, Map<String, String>> extractCategoriesAndRespectiveUrls(WebDriver driver) {
         Map<String, Map<String, String>> categoriesAndUrls = new HashMap<>();
-        driver.get(url);
+        driver.get(asosHomePageUrl);
 //          Find primary and secondary category list
         WebElement menu = driver.findElement(By.className("tx7VWbM"));
         List<WebElement> categories = menu.findElements(By.tagName("button"));
@@ -44,6 +51,8 @@ public class AsosScraper {
         List<WebElement> secondaryCategories = menu.findElements(By.cssSelector(".EsGFLPm"));
         ListIterator<WebElement> categoriesIterator = categories.listIterator();
 //           Iterate over all primary categories
+//          Iterator is used because it provides index of the category.
+//          That index is later used to access a list of corresponding secondary categories
         while (categoriesIterator.hasNext()) {
             int primaryCategoryIndex = categoriesIterator.nextIndex();
 //              Get primary category text
@@ -73,13 +82,6 @@ public class AsosScraper {
 
     }
 
-    private void sleep(int miliseconds) {
-        try {
-            Thread.sleep(miliseconds);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private void acceptCookies(WebDriver driver) {
         if (!isCookiesAccepted) {
@@ -132,7 +134,7 @@ public class AsosScraper {
             int counter = 0;
 //          Wait for a search product API call
             while (interceptedHttpRequest.getUrl() == null) {
-                sleep(1000);
+                CommonUtils.sleep(1000);
                 counter++;
                 if (counter == 10) {
                     throw new RuntimeException("Failed to load more products");
@@ -158,13 +160,13 @@ public class AsosScraper {
         return products;
     }
 
-    private Connection.Response callAsosProductSearchApi(String url, Map<String, String> headers, String offset, String limit) throws IOException {
+    private Connection.Response callProductSearchApi(String url, Map<String, String> headers, String offset, String limit) throws IOException {
 //       Set offset, the number of the document from which the next documents will be downloaded
         String initialUrl = UrlUtil.replaceQueryParameter(url, "offset", offset);
 //       Set the limit to a number of products that will be downloaded from the API
         initialUrl = UrlUtil.replaceQueryParameter(initialUrl, "limit", limit);
 //        Execute request
-        Connection.Response response = JsoupUtil.execute(initialUrl, headers);
+        Connection.Response response = JsoupUtil.execute(initialUrl, headers, Connection.Method.GET);
         return response;
     }
 
@@ -196,7 +198,7 @@ public class AsosScraper {
 //           Loop until all product are downloaded and extracted
             while (true) {
 //              Send request to asos API
-                Connection.Response response = callAsosProductSearchApi(interceptedHttpRequest.getUrl(), interceptedHttpRequest.getHeaders(), Integer.toString(offset), Integer.toString(limit));
+                Connection.Response response = callProductSearchApi(interceptedHttpRequest.getUrl(), interceptedHttpRequest.getHeaders(), Integer.toString(offset), Integer.toString(limit));
 //               Parse response
                 JsonElement jsonElement = JsonUtil.parse(response.body());
                 JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -238,7 +240,7 @@ public class AsosScraper {
         for (Map.Entry<String, Map<String, String>> primaryCategoryAndUrls : categoriesAndUrls.entrySet()) {
             String primaryCategory = primaryCategoryAndUrls.getKey();
             Map<String, String> secondaryCategoryAndUrls = primaryCategoryAndUrls.getValue();
-            List<AsosProduct> products = scrapeProductsFromSecondaryCategory(driver, secondaryCategoryAndUrls,primaryCategory);
+            List<AsosProduct> products = scrapeProductsFromSecondaryCategory(driver, secondaryCategoryAndUrls, primaryCategory);
             allProducts.addAll(products);
             logger.info("");
         }
@@ -254,7 +256,7 @@ public class AsosScraper {
             logger.info("Scrape: {}", secondaryCategoryUrl);
             logger.info("Category: {}", secondaryCategory);
 //            Start scraping
-            List<AsosProduct> products = scrapeProducts(driver, secondaryCategoryUrl,primaryCategory);
+            List<AsosProduct> products = scrapeProducts(driver, secondaryCategoryUrl, primaryCategory);
             allProducts.addAll(products);
         }
         return allProducts;
@@ -265,9 +267,8 @@ public class AsosScraper {
         WebDriver driver = new ChromeLauncher().launch();
 //       Set implicit  wait  to 10 seconds. Allows time for elements to become available
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-        String asosHomePageUrl = "https://www.asos.com/men/";
 //        Extract categories and respective urls
-        Map<String, Map<String, String>> categoriesAndUrls = extractCategoriesAndRespectiveUrls(driver, asosHomePageUrl);
+        Map<String, Map<String, String>> categoriesAndUrls = extractCategoriesAndRespectiveUrls(driver);
 //        Scrape all products from all categories
         List allProducts = scrapeProductsFromPrimaryCategory(driver, categoriesAndUrls);
         FileUtil.writeToCsvFile(allProducts);

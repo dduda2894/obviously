@@ -1,10 +1,11 @@
-## ASOS scraper
+## How to start a scraper
 
-### How to run
+First, in the `config.properties` file in the `resources` folder change `scraper` property to the scraper that you want to run.
+E.g  asosScraper, debenhamsScraper
 
-Run main method in src/main/java/org/example/scrapers/asos/AsosScraper.java
+Then run `ScraperLauncher` class
 
-### How it works
+## How both scrapers work
 
 The scraper first finds all categories and their respective URLs.
 It then iterates over each category loading its url.
@@ -13,9 +14,12 @@ As the page loads more products the website makes an API call to download the pr
 The scraper gets the URL of the API and then makes only API calls to get the details of all products.
 
 Note:
-For the purpose of this test, the scraper only picks one sub category from each available category.
-Some subcategory have different layout. Only the layout where products are displayed in first page was addressed in the
+For the purpose of this test, the scraper only picks one sub category from each available category, the first one at the top left corner.
+Some subcategory page have different layout. Only the layout where products are displayed in first page was addressed in the
 scraper.
+
+
+## ASOS scraper
 
 ### ASOS product search API
 
@@ -24,17 +28,23 @@ The maximum number of products that can be downloaded per one request is 200.
 It is unclear why sometimes the API return a higher or lower number of products than the website.
 Further investigation into this is necessary.
 
-### WebDriverException
 
-A WebDriverException exception is thrown mid run. The scraper continues to run. Needs to be investigated, but does not
+## Debenhams scraper
+
+### Debenhams product search API
+
+The maximum number of products that can be downloaded per one request is 1000. 
+However, it appears to allow to query the highest amount of products by a unique query when 40 products are downloaded per request.
+It does not allow to download more than 2000 products for any unique given query, be it through the browser(website) or direct API call.
+
+## WebDriverException
+
+A WebDriverException exception is thrown mid run. The scrapers continues to run. Needs to be investigated, but does not
 appear to affect the result.
 
-### products.csv file
+## Saving the data to the in-memory database
 
-After a successful completion of scraping the products are stored in a products.csv file at the root directory of the
-project.
-
-The category field contains a primary and a sub categories separated by a symbol '/'.
-When the anchor text of the category in the website is "View All", the primary category and sub category in the file
-match.
-
+Many products are listed in multiple categories. As a result they appear multiple times in the products list.
+This prevents products from being saved in the database because of duplicate ID. 
+This could be addressed y merging the duplicates before saving to the database.
+For the purpose of this test only 10 products are saved into the database and later retrieved and logged in the console.
