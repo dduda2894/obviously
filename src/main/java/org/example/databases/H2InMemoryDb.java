@@ -41,7 +41,6 @@ public class H2InMemoryDb implements AutoCloseable {
                 logger.info("Category: {}", product.getCategory());
                 logger.info("Price: {}", product.getPrice());
                 logger.info("---------------------");
-//            }
 
             }
             return products;

@@ -40,6 +40,7 @@ public class DebenhamsScraper extends AsosScraper {
 
     public String url = "https://www.debenhams.com/";
 
+    @Override
     protected List<Product> extractProductsJson(JsonObject jsonObject, String primaryCategory) {
         List<Product> products = new ArrayList<>();
 //        Get all products from JSON
@@ -56,7 +57,7 @@ public class DebenhamsScraper extends AsosScraper {
         return products;
     }
 
-    private Connection.Response callProductSearchApi(String url, Map<String, String> headers, String content, HttpMethod method, String page) throws IOException {
+    protected Connection.Response callProductSearchApi(String url, Map<String, String> headers, String content, HttpMethod method, String page) throws IOException {
 //       Set offset, the number of the document from which the next documents will be downloaded
         content = content.replaceAll("&page=.", "&page=" + page);
 //        Execute request
@@ -65,6 +66,7 @@ public class DebenhamsScraper extends AsosScraper {
         return response;
     }
 
+    @Override
     protected List<Product> extractAllProductsFromSearchApi(InterceptedHttpRequest interceptedHttpRequest, String primaryCategory) {
         List<Product> allProducts = new ArrayList<>();
         try {
@@ -99,6 +101,7 @@ public class DebenhamsScraper extends AsosScraper {
         return allProducts;
     }
 
+    @Override
     protected HttpHandler getHttpHandlerWithUrlFilter(HttpHandler next, String urlPart, InterceptedHttpRequest interceptedHttpRequest) {
         return (HttpHandler) req -> {
             if (req.getMethod() == HttpMethod.POST && req.getUri().contains(urlPart)) {
@@ -122,6 +125,7 @@ public class DebenhamsScraper extends AsosScraper {
         };
     }
 
+    @Override
     protected void loadMoreProducts(WebDriver driver) {
         WebElement loadMoreButton = driver.findElement(By.cssSelector("button[data-test-id='pagination-load-more']"));
         Wait<WebDriver> wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -132,6 +136,7 @@ public class DebenhamsScraper extends AsosScraper {
         actions.moveToElement(loadMoreButton).click().perform();
     }
 
+    @Override
     protected InterceptedHttpRequest acquireSearchApiRequestDetails(WebDriver driver, String url) {
         InterceptedHttpRequest interceptedHttpRequest = new InterceptedHttpRequest();
 //        Intercept product search request
@@ -153,7 +158,7 @@ public class DebenhamsScraper extends AsosScraper {
         return interceptedHttpRequest;
     }
 
-
+    @Override
     protected Map<String, Map<String, String>> extractCategoriesAndRespectiveUrls(WebDriver driver) {
         Map<String, Map<String, String>> categoriesAndUrls = new HashMap<>();
         driver.get(url);
